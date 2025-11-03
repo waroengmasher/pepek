@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Struk Digital - Waroeng Masher</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* * Gaya ini disalin dari CSS Anda di file kasir
+         * agar tampilan struk digital konsisten dengan struk di modal.
+        */
+        body {
+            background-color: #f4f4f4;
+            padding: 20px;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        #receipt-content {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: #fff;
+            color: #000;
+            padding: 25px; /* Lebih besar untuk tampilan browser */
+            width: 100%;
+            max-width: 450px; /* Sedikit lebih lebar */
+            margin: 0 auto;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border: 1px solid #ddd;
+        }
+        #receipt-content .receipt-header {
+            text-align: center;
+            border-bottom: 2px dashed #000;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        #receipt-content .receipt-header h3 {
+            margin: 0;
+            font-size: 1.8rem; /* Lebih besar */
+            color: #000;
+            font-weight: 700;
+        }
+        #receipt-content .receipt-header p {
+            margin: 5px 0;
+            font-size: 0.9rem;
+        }
+        #receipt-content .receipt-body {
+            margin-bottom: 15px;
+        }
+        #receipt-content .receipt-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px; /* Sedikit lebih renggang */
+            font-size: 0.95rem;
+        }
+        #receipt-content .receipt-footer {
+            border-top: 2px dashed #000;
+            padding-top: 15px;
+            margin-top: 15px;
+            text-align: center;
+        }
+        #receipt-content .receipt-footer p {
+            margin: 5px 0;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        .item-name {
+            flex-basis: 60%;
+            text-align: left;
+        }
+        .item-price {
+            flex-basis: 40%;
+            text-align: right;
+        }
+        .summary-label {
+            text-align: right;
+            padding-right: 10px;
+        }
+        .summary-value {
+            text-align: right;
+            font-weight: bold;
+        }
+        .error-message {
+            text-align: center;
+            color: red;
+            font-weight: bold;
+            font-size: 1.2rem;
+            padding: 40px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="receipt-container">
+        <div class="d-flex justify-content-center align-items-center" style="height: 80vh;">
+            <div class="spinner-border text-dark" role="status">
+                <span class="visually-hidden">Memuat data struk...</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Fungsi untuk format Rupiah
+        function formatRupiah(number) {
+            return new Intl.NumberFormat('id-ID', { 
+                style: 'currency', 
+                currency: 'IDR', 
+                minimumFractionDigits: 0 
+            }).format(number);
+        }
+
+        // Fungsi untuk menampilkan struk
+        function displayReceipt(data) {
+            const container = document.getElementById('receipt-container');
+            
+            // 1. Buat HTML untuk item
+            let itemsHtml = '';
+            data.items.forEach(item => {
+                // 'n' adalah nama, 'q' adalah quantity, 'p' adalah price
+                // Sesuai dengan yang Anda definisikan di `generateReceiptQR`
+                itemsHtml += `
+                    <div class="receipt-item">
+                        <span class="item-name">${item.n} (${item.q}x)</span>
+                        <span class="item-price">${formatRupiah(item.p * item.q)}</span>
+                    </div>
+                `;
+            });
+
+            // 2. Buat HTML struk lengkap
+            const receiptHtml = `
+                <div id="receipt-content">
+                    <div class="receipt-header">
+                        <h3>WAROENG MASHER</h3>
+                        <p>Jl. pancing mabar,pasar 4</p>
+                        <p>Telp: (Nomor Telepon)</p>
+                        <p>${data.date}</p>
+                        <p>ID: ${data.id}</p>
+                    </div>
+                    
+                    <div class="receipt-body">
+                        ${itemsHtml}
+                        <hr style="border-style: dashed;">
+                        
+                        <div class="receipt-item">
+                            <span class="summary-label">Subtotal:</span>
+                            <span class="summary-value">${formatRupiah(data.sub)}</span>
+                        </div>
+                        <div class="receipt-item">
+                            <span class="summary-label">Diskon (${data.disc_p}%):</span>
+                            <span class="summary-value">-${formatRupiah(data.disc_a)}</span>
+                        </div>
+                        <div class="receipt-item" style="font-size: 1.1rem; font-weight: bold; border-top: 1px solid #000; padding-top: 5px;">
+                            <span class="summary-label">Total:</span>
+                            <span class="summary-value">${formatRupiah(data.total)}</span>
+                        </div>
+                        <div class="receipt-item mt-2">
+                            <span class="summary-label">Tunai:</span>
+                            <span class="summary-value">${formatRupiah(data.paid)}</span>
+                        </div>
+                        <div class="receipt-item">
+                            <span class="summary-label">Kembalian:</span>
+                            <span class="summary-value">${formatRupiah(data.change)}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="receipt-footer">
+                        <p>Terima Kasih</p>
+                        <p>Selamat Berbelanja Kembali</p>
+                    </div>
+                </div>
+            `;
+            
+            // 3. Masukkan HTML ke dalam kontainer
+            container.innerHTML = receiptHtml;
+        }
+
+        // Fungsi untuk menampilkan error
+        function showError(message) {
+            const container = document.getElementById('receipt-container');
+            container.innerHTML = `<div id="receipt-content"><p class="error-message">${message}</p></div>`;
+        }
+
+        // --- INILAH LOGIKA UTAMANYA ---
+        document.addEventListener('DOMContentLoaded', () => {
+            try {
+                // 1. Ambil parameter 'data' dari URL
+                const urlParams = new URLSearchParams(window.location.search);
+                const dataString = urlParams.get('data');
+
+                if (!dataString) {
+                    throw new Error('Data transaksi tidak ditemukan.');
+                }
+
+                // 2. Decode string Base64 kembali menjadi JSON string
+                const decodedDataString = atob(dataString);
+
+                // 3. Parse JSON string menjadi objek
+                const transactionData = JSON.parse(decodedDataString);
+
+                // 4. Tampilkan struk menggunakan data tersebut
+                displayReceipt(transactionData);
+
+                // 5. Set judul dokumen
+                document.title = `Struk ${transactionData.id} - Waroeng Masher`;
+
+            } catch (error) {
+                console.error("Gagal memuat struk:", error);
+                showError('Gagal memuat data struk. Data tidak valid atau korup.');
+            }
+        });
+    </script>
+
+</body>
+</html>
